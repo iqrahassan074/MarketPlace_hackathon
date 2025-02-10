@@ -23,7 +23,7 @@ const Blog = () => {
         <div className="container mx-auto flex justify-between items-center">
           <div className="z-20">
             <Image
-              src="/pictures/logo.jpeg"
+              src="/pictures/logo.png"
               alt="Furniro Logo"
               width={120}
               height={40}

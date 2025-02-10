@@ -132,7 +132,7 @@ const Shop = () => {
 
           <div className="ml-0 lg:ml-0">
             <Image
-              src="/pictures/logo.jpeg"
+              src="/pictures/logo.png"
               alt="Furniro Logo"
               width={120}
               height={40}
