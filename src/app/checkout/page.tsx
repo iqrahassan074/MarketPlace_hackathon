@@ -95,8 +95,8 @@ const Checkout = () => {
                         src={urlFor(item.productImage).url()}
                         alt="image"
                         className="object-cover w-full h-full"
-                        width={100} // Add a fixed width for the image
-                        height={100} // Add a fixed height for the image
+                        width={100} 
+                        height={100} 
                       />
                     )}
                   </div>
@@ -236,6 +236,51 @@ const Checkout = () => {
 };
 
 export default Checkout;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
