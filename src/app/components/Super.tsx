@@ -113,7 +113,7 @@ const Super = () => {
                      <FaShareAlt size={18} />
                    </button>
                  </div>
-                 <button className="bg-white text-orange-300 py-2 px-6 font-medium shadow-lg hover:bg-orange-300 hover:text-white transition-colors duration-200">
+                 <button className="bg-white text-orange-300 py-3 px-6 font-medium shadow-lg hover:bg-orange-300 hover:text-white transition-colors duration-200">
                    Add to Cart
                  </button>
                </div>

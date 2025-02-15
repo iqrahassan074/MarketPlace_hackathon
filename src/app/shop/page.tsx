@@ -226,10 +226,11 @@ const Shop = () => {
               </div>
 
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <button className="bg-white text-orange-400 py-2 px-6 font-medium  shadow-lg hover:bg-orange-300 hover:text-white transition-colors duration-200">
+                <button className="bg-white text-orange-400 py-3 px-6 font-medium shadow-lg hover:bg-orange-300 hover:text-white transition-colors duration-200">
                   Add to Cart
                 </button>
               </div>
+              
 
               <div className="p-4">
                 <h2 className="text-xl font-semibold">{product.name}</h2>

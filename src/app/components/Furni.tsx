@@ -4,14 +4,15 @@ import Image from "next/image";
 
 const Furni = () => {
   const sizes = [
-    "w-full h-60",    
-    "w-2/3 h-56",     
-    "w-2/3 h-48",     
-    "w-2/3 h-64",     
-    "w-2/3 h-52",     
-    "w-2/3 h-60",     
-    "w-2/3 h-50",   
-    "w-2/3 h-55",     
+    "w-full h-55",    
+    "w-full h-56",     
+    "w-full h-48",     
+    "w-full h-64",     
+    "w-full h-65",     
+    "w-full h-60",     
+    "w-full h-85",   
+    "w-full h-60", 
+     
   ];
 
   const offsets = [
@@ -20,9 +21,9 @@ const Furni = () => {
     "translate-y-4",
     "translate-y-3",
     "translate-y-1",
-    "translate-y-2",
+    "translate-y-12",
     "translate-y-1",
-    "translate-y-3",
+    "translate-y-10",
   ];
 
   return (

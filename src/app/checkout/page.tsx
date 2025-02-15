@@ -7,6 +7,9 @@ import { urlFor } from "../../sanity/lib/image";
 import Link from "next/link";
 import { CgChevronRight } from "react-icons/cg";
 import Image from "next/image";
+import Swal from "sweetalert2";
+import { useRouter } from "next/navigation"; 
+import { client } from "@/sanity/lib/client";
 
 const Checkout = () => {
   const [cartItems, setCartItems] = useState<Product[]>([]);
@@ -30,6 +33,16 @@ const Checkout = () => {
     zipCode: false,
     city: false,
   });
+
+  const [isClient, setIsClient] = useState(false); 
+  const [processing, setProcessing] = useState(false); 
+  const [router, setRouter] = useState<any>(null); 
+
+  useEffect(() => {
+    setIsClient(true); 
+  }, []);
+
+  const routerInstance = useRouter();
 
   useEffect(() => {
     setCartItems(getCartItems());
@@ -64,53 +77,107 @@ const Checkout = () => {
     setFormErrors(error);
     return Object.values(error).every((error) => !error);
   };
+  
+  const handlePlaceOrder = async () => {  
+    if (!validateForm()) {
+      Swal.fire({
+        title: "Error",
+        text: "Please fill in all the required fields.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
 
-  const handlePlaceOrder = () => {
-    if (validateForm()) localStorage.removeItem("appliedDiscount");
+    setProcessing(true); 
+
+    const orderData = {
+      _type: "order",
+      firstName: formValues.firstName,
+      lastName: formValues.lastName,
+      address: formValues.address,
+      zipCode: formValues.zipCode,
+      city: formValues.city,
+      email: formValues.email,
+      phone: formValues.phone,
+      cartItems: cartItems.map((items) => ({
+        _type: "reference",
+        _ref: items._id,
+      })),
+      total: (subTotal - discount).toFixed(2),
+      discount: discount,
+      orderDate: new Date().toISOString(),
+    };
+
+    try {
+      await client.create(orderData);  
+      localStorage.removeItem("appliedDiscount");
+      
+      Swal.fire({
+        title: "Success!",
+        text: "Your order has been placed successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+      }).then(() => {
+        routerInstance.push("/");  
+      });
+    } catch (error) {
+      console.error("Error creating order", error);
+      Swal.fire({
+        title: "Error",
+        text: "There was an issue placing your order. Please try again later.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-red-200 via-yellow-200 to-orange-200">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center gap-2 py-4 text-black">
-          <Link href={"/cart"} className="text-lg font-bold transition duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-red-200 via-amber-100 to-pink-200">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
+        <nav className="flex items-center gap-2 text-black font-semibold text-lg mb-6">
+          <Link href={"/cart"} className="transition duration-300 text-xl hover:underline">
             Cart
           </Link>
-          <CgChevronRight className="text-white" />
-          <span className="text-lg font-bold">Checkout</span>
+          <CgChevronRight className="text-white text-xl" />
+          <span className="text-xl text-black">Checkout</span>
         </nav>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          <div className="bg-lime-50 p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-500">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Order Summary</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+         
+          <div className="bg-white p-8 rounded-xl shadow-2xl hover:shadow-xl transition duration-300">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Order Summary</h2>
             {cartItems.length > 0 ? (
-              cartItems.map((item) => (
-                <div key={item._id} className="flex items-center gap-4 py-3 border-b hover:bg-gray-100 transition duration-300">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden shadow-md">
-                    {item.productImage && (
-                      <Image
-                        src={urlFor(item.productImage).url()}
-                        alt="image"
-                        className="object-cover w-full h-full"
-                        width={100} 
-                        height={100} 
-                      />
-                    )}
+              <div className="space-y-4">
+                {cartItems.map((item) => (
+                  <div key={item._id} className="flex items-center justify-between border-b pb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden shadow-md">
+                        {item.productImage && (
+                          <Image
+                            src={urlFor(item.productImage).url()}
+                            alt={item.title}
+                            className="object-cover w-full h-full"
+                            width={80} 
+                            height={80}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700">{item.title}</h3>
+                        <p className="text-sm text-gray-500">Qty: {item.inventory}</p>
+                      </div>
+                    </div>
+                    <p className="font-semibold text-lg text-gray-800">${(item.price * (item.inventory ?? 0)).toFixed(2)}</p>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-700">{item.title}</h3>
-                    <p className="text-sm text-gray-500">Quantity: {item.inventory}</p>
-                  </div>
-                  <p className="font-semibold text-gray-700">${(item.price * (item.inventory ?? 0)).toFixed(2)}</p>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
               <p className="text-sm font-medium text-gray-500">No items in cart</p>
             )}
-            <div className="text-right pt-4">
+            <div className="text-right mt-4 border-t pt-4">
               <p className="text-sm text-gray-700">
                 SubTotal: <span className="font-bold">${subTotal.toFixed(2)}</span>
               </p>
@@ -124,109 +191,114 @@ const Checkout = () => {
           </div>
 
         
-          <div className="bg-lime-50 p-6 rounded-lg shadow-xl hover:shadow-2xl transition duration-500">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Billing Information</h2>
+          <div className="bg-white p-8 rounded-xl shadow-2xl hover:shadow-xl transition duration-300">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Billing Information</h2>
             <form>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-300"
-                    value={formValues.firstName}
-                    onChange={handleInputChange}
-                    placeholder="Enter Your First Name"
-                  />
-                  {formErrors.firstName && <p className="text-sm text-red-500">First Name is required</p>}
+              <div className="space-y-6">
+                <div className="flex gap-6">
+                  <div className="w-full">
+                    <label htmlFor="firstName" className="text-sm font-semibold text-gray-700">First Name</label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      className="w-full p-4 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+                      value={formValues.firstName}
+                      onChange={handleInputChange}
+                      placeholder="First Name"
+                    />
+                    {formErrors.firstName && <p className="text-xs text-red-500">First name is required.</p>}
+                  </div>
+
+                  <div className="w-full">
+                    <label htmlFor="lastName" className="text-sm font-semibold text-gray-700">Last Name</label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      className="w-full p-4 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+                      value={formValues.lastName}
+                      onChange={handleInputChange}
+                      placeholder="Last Name"
+                    />
+                    {formErrors.lastName && <p className="text-xs text-red-500">Last name is required.</p>}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-300"
-                    value={formValues.lastName}
-                    onChange={handleInputChange}
-                    placeholder="Enter Your Last Name"
-                  />
-                  {formErrors.lastName && <p className="text-sm text-red-500">Last Name is required</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                <div>
+                  <label htmlFor="email" className="text-sm font-semibold text-gray-700">Email Address</label>
                   <input
                     type="email"
                     id="email"
-                    className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-300"
+                    className="w-full p-4 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
                     value={formValues.email}
                     onChange={handleInputChange}
-                    placeholder="Enter Your Email"
+                    placeholder="Email Address"
                   />
-                  {formErrors.email && <p className="text-sm text-red-500">Email is required</p>}
+                  {formErrors.email && <p className="text-xs text-red-500">Email is required.</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
+                <div>
+                  <label htmlFor="phone" className="text-sm font-semibold text-gray-700">Phone Number</label>
                   <input
                     type="text"
                     id="phone"
-                    className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-300"
+                    className="w-full p-4 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
                     value={formValues.phone}
                     onChange={handleInputChange}
-                    placeholder="Enter Your Phone"
+                    placeholder="Phone Number"
                   />
-                  {formErrors.phone && <p className="text-sm text-red-500">Phone is required</p>}
+                  {formErrors.phone && <p className="text-xs text-red-500">Phone number is required.</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">Address</label>
+                <div>
+                  <label htmlFor="address" className="text-sm font-semibold text-gray-700">Address</label>
                   <input
                     type="text"
                     id="address"
-                    className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-300"
+                    className="w-full p-4 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
                     value={formValues.address}
                     onChange={handleInputChange}
-                    placeholder="Enter Your Address"
+                    placeholder="Address"
                   />
-                  {formErrors.address && <p className="text-sm text-red-500">Address is required</p>}
+                  {formErrors.address && <p className="text-xs text-red-500">Address is required.</p>}
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">Zip Code</label>
-                  <input
-                    type="text"
-                    id="zipCode"
-                    className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-300"
-                    value={formValues.zipCode}
-                    onChange={handleInputChange}
-                    placeholder="Enter Your Zip Code"
-                  />
-                  {formErrors.zipCode && <p className="text-sm text-red-500">Zip Code is required</p>}
+                <div className="flex gap-6">
+                  <div className="w-full">
+                    <label htmlFor="zipCode" className="text-sm font-semibold text-gray-700">Zip Code</label>
+                    <input
+                      type="text"
+                      id="zipCode"
+                      className="w-full p-4 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+                      value={formValues.zipCode}
+                      onChange={handleInputChange}
+                      placeholder="Zip Code"
+                    />
+                    {formErrors.zipCode && <p className="text-xs text-red-500">Zip code is required.</p>}
+                  </div>
+
+                  <div className="w-full">
+                    <label htmlFor="city" className="text-sm font-semibold text-gray-700">City</label>
+                    <input
+                      type="text"
+                      id="city"
+                      className="w-full p-4 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500"
+                      value={formValues.city}
+                      onChange={handleInputChange}
+                      placeholder="City"
+                    />
+                    {formErrors.city && <p className="text-xs text-red-500">City is required.</p>}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
-                  <input
-                    type="text"
-                    id="city"
-                    className="w-full p-3 border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 hover:border-blue-500 transition duration-300"
-                    value={formValues.city}
-                    onChange={handleInputChange}
-                    placeholder="Enter Your City"
-                  />
-                  {formErrors.city && <p className="text-sm text-red-500">City is required</p>}
-                </div>
+                <button
+                  type="button"
+                  onClick={handlePlaceOrder}
+                  className={`w-full py-4 text-white font-bold text-lg rounded-lg transition duration-300 transform hover:scale-105 ${processing ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                  disabled={processing}
+                >
+                  {processing ? "Processing..." : "Place Order"}
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={handlePlaceOrder}
-                className="w-full mt-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-md hover:from-indigo-500 hover:to-blue-500 transition duration-300 transform hover:scale-105"
-              >
-                Place Order
-              </button>
             </form>
           </div>
         </div>
@@ -236,47 +308,6 @@ const Checkout = () => {
 };
 
 export default Checkout;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
